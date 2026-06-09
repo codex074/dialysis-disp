@@ -6,14 +6,14 @@ import type { Dispense, OrderItem, Patient } from '../../types'
 import { createDispenseOrder, updateOrder } from '../../services/dispenses'
 import { buildClientNurseDashboard, isPatientInactive } from '../../lib/dashboard'
 import { formatThaiDate, getOrderItems, getOrderFluidNames } from '../../lib/format'
-import { buildNurseAppointmentQueue, getLatestReusableOrder, getPatientOrders, type QueueItem } from '../../lib/orders'
+import { getLatestReusableOrder, getPatientOrders } from '../../lib/orders'
 import { getPaginationData } from '../../lib/pagination'
 import { Swal, toastError, toastSuccess } from '../../lib/swal'
 import { quickViewHistory } from '../../lib/historyModal'
 import FluidCombo from '../../components/FluidCombo'
 import PatientPicker, { findPatientsByQuery } from '../../components/PatientPicker'
 import Pagination from '../../components/Pagination'
-import { AppointmentBadge, PatientStatusBadge, StatusBadge } from '../../components/badges'
+import { PatientStatusBadge, StatusBadge } from '../../components/badges'
 
 const EMPTY_ITEM: OrderItem = { fluidType: '', quantity: '' }
 
@@ -27,7 +27,7 @@ export default function OrderTab({
   onRegisterNew: (hn: string) => void
 }) {
   const { user } = useAuth()
-  const { patients, fluids, orders, appointments, refresh } = useData()
+  const { patients, fluids, orders, refresh } = useData()
 
   const [searchText, setSearchText] = useState('')
   const [patient, setPatient] = useState<Patient | null>(null)
@@ -42,8 +42,9 @@ export default function OrderTab({
   const [submitting, setSubmitting] = useState(false)
 
   const dashboard = useMemo(() => buildClientNurseDashboard(orders, patients), [orders, patients])
-  const queue = useMemo(() => buildNurseAppointmentQueue(appointments, patients, orders), [appointments, patients, orders])
-  const recentPagination = useMemo(() => getPaginationData(orders, recentPage), [orders, recentPage])
+  // แสดงเฉพาะรายการที่รอจ่าย (ตัดที่จ่ายแล้ว/ยกเลิกออก)
+  const pendingRecent = useMemo(() => orders.filter((o) => o.status === 'pending'), [orders])
+  const recentPagination = useMemo(() => getPaginationData(pendingRecent, recentPage), [pendingRecent, recentPage])
   const quickHistory = useMemo(() => (patient ? getPatientOrders(orders, patient.hn).slice(0, 5) : []), [orders, patient])
 
   // เติมฟอร์มจาก prefill HN (ข้ามมาจากหน้าลงทะเบียน)
@@ -80,7 +81,7 @@ export default function OrderTab({
       toastError('กรุณากรอก HN')
       return
     }
-    const matches = findPatientsByQuery(patients, q)
+    const matches = findPatientsByQuery(patients, q).filter((p) => !isPatientInactive(p))
     if (matches.length === 1) {
       selectPatient(matches[0])
     } else if (matches.length > 1) {
@@ -111,22 +112,6 @@ export default function OrderTab({
     setNextDate(opts.nextAppointment || '')
     setNextTime(opts.nextTime || '09:00')
     return true
-  }
-
-  function pickAppointment(item: QueueItem) {
-    const p = patients.find((x) => x.hn === item.hn)
-    if (p && isPatientInactive(p)) {
-      toastError('ผู้ป่วยถูกตั้งเป็น Inactive ไม่สามารถสั่งจ่ายใหม่ได้')
-      return
-    }
-    const target = p || ({ hn: item.hn, name: item.name, phone: '', treatmentRights: '', note: '', registeredDate: '', status: 'active', inactiveNote: '' } as Patient)
-    setMode('create')
-    setPatient(target)
-    setSearchText(`${target.hn} - ${target.name}`)
-    const tmpl = getLatestReusableOrder(orders, item.hn, item.dispenseId)
-    if (applyTemplate(tmpl, { nextAppointment: item.date || '', nextTime: item.time || '09:00' })) {
-      toastSuccess('ดึงข้อมูลคำสั่งเดิมมาใส่ฟอร์มแล้ว')
-    }
   }
 
   function startEditOrder(order: Dispense) {
@@ -230,30 +215,6 @@ export default function OrderTab({
         </div>
       </div>
 
-      {/* Appointment panels */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-        <AppointmentPanel
-          title="ผู้ป่วยนัดวันนี้"
-          subtitle="เลือกจากรายการเพื่อเริ่มสั่งจ่ายได้ทันที"
-          headerClass="from-rose-50 to-orange-50"
-          countClass="bg-rose-100 text-rose-700"
-          items={queue.today}
-          emptyText="ยังไม่มีนัดวันนี้"
-          onPick={pickAppointment}
-          onHistory={(hn, name) => quickViewHistory(hn, name)}
-        />
-        <AppointmentPanel
-          title="ผู้ป่วยใกล้ถึงนัด"
-          subtitle="แสดงนัดที่กำลังจะมาถึงภายใน 7 วัน"
-          headerClass="from-amber-50 to-yellow-50"
-          countClass="bg-amber-100 text-amber-700"
-          items={queue.upcoming}
-          emptyText="ยังไม่มีนัดใกล้ถึง"
-          onPick={pickAppointment}
-          onHistory={(hn, name) => quickViewHistory(hn, name)}
-        />
-      </div>
-
       {/* Search */}
       <div className="bg-white rounded-2xl shadow-sm border border-cyan-100 overflow-visible mb-6 relative z-30">
         <div className="px-5 py-4 border-b border-cyan-100 bg-gradient-to-r from-cyan-50 to-blue-50">
@@ -270,6 +231,7 @@ export default function OrderTab({
                 patients={patients}
                 value={searchText}
                 disabled={mode === 'edit'}
+                hideInactive
                 onChange={(t) => {
                   setSearchText(t)
                   if (mode !== 'edit') setPatient(null)
@@ -477,62 +439,3 @@ export default function OrderTab({
   )
 }
 
-function AppointmentPanel({
-  title,
-  subtitle,
-  headerClass,
-  countClass,
-  items,
-  emptyText,
-  onPick,
-  onHistory,
-}: {
-  title: string
-  subtitle: string
-  headerClass: string
-  countClass: string
-  items: QueueItem[]
-  emptyText: string
-  onPick: (item: QueueItem) => void
-  onHistory: (hn: string, name: string) => void
-}) {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-cyan-100 overflow-hidden">
-      <div className={`px-5 py-4 border-b border-cyan-100 bg-gradient-to-r ${headerClass} flex items-center justify-between gap-3 flex-wrap`}>
-        <div>
-          <h3 className="text-slate-800 font-semibold">{title}</h3>
-          <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
-        </div>
-        <span className={`text-xs px-3 py-1 rounded-full font-medium ${countClass}`}>{items.length} ราย</span>
-      </div>
-      <div className="p-3 space-y-3">
-        {items.length === 0 ? (
-          <div className="text-center py-8 text-slate-400">{emptyText}</div>
-        ) : (
-          items.map((item) => (
-            <div key={`${item.id}`} className={`rounded-xl border ${item.daysUntil === 0 ? 'border-rose-200 bg-rose-50/70' : 'border-amber-200 bg-amber-50/70'} p-4`}>
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <AppointmentBadge daysUntil={item.daysUntil} />
-                    <span className="text-xs text-slate-500">{formatThaiDate(item.date)}{item.time ? ` • ${item.time}` : ''}</span>
-                  </div>
-                  <p className="text-sm font-semibold text-slate-800 mt-2">{item.patient.name || item.name}</p>
-                  <p className="text-xs text-slate-500 mt-1">HN: {item.patient.hn || item.hn}{item.patient.phone ? ` • โทร: ${item.patient.phone}` : ''}</p>
-                  <p className="text-xs text-slate-500 mt-1">สิทธิ: {item.patient.treatmentRights || 'ไม่ระบุ'}</p>
-                  <p className="text-xs text-slate-600 mt-2">
-                    {item.latestOrder ? `ล่าสุด: ${getOrderFluidNames(item.latestOrder).join(', ')} (${item.latestOrder.orderDateOnly || item.latestOrder.orderDate || '-'})` : 'ยังไม่มีประวัติคำสั่งเดิม'}
-                  </p>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <button type="button" onClick={() => onPick(item)} className="text-xs px-3 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 font-medium">เลือกมาสั่งจ่าย</button>
-                  <button type="button" onClick={() => onHistory(item.hn, item.patient.name || item.name)} className="text-xs px-3 py-2 rounded-lg bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 font-medium">ดูประวัติ</button>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  )
-}

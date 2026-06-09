@@ -43,12 +43,10 @@ export default function NurseApp({ onHome }: { onHome: () => void }) {
     <>
       <Loading show={loading} />
       <header className="bg-white shadow-sm border-b border-cyan-100 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-xl flex items-center justify-center shadow-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" /></svg>
-              </div>
+              <img src="/logo-exam.svg" alt="ห้องตรวจ" className="w-10 h-10 rounded-xl shadow-lg" />
               <div>
                 <h1 className="text-lg font-bold text-slate-800">ห้องตรวจ</h1>
                 <p className="text-xs text-slate-500 mobile-hide">Exam Room Module</p>
@@ -73,7 +71,7 @@ export default function NurseApp({ onHome }: { onHome: () => void }) {
         </div>
       </header>
 
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+      <nav className="w-full px-4 sm:px-6 lg:px-8 mt-6">
         <div className="flex flex-wrap gap-2 bg-white/50 backdrop-blur p-2 rounded-2xl shadow-sm border border-cyan-100">
           <button onClick={() => setTab('order')} className={tabClass(tab === 'order')}>
             <span className="flex items-center justify-center gap-2">
@@ -96,7 +94,7 @@ export default function NurseApp({ onHome }: { onHome: () => void }) {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6">
         {tab === 'order' && (
           <OrderTab
             prefillHN={orderPrefillHN}

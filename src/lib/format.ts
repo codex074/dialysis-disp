@@ -27,6 +27,17 @@ export function getFluidDisplayName(fluid?: Partial<Fluid>): string {
   return fluid?.labelName || fluid?.name || ''
 }
 
+// ตัดรหัสน้ำยานำหน้าออก (เช่น "D03 • PERI DIALYSIS... • 0.025" -> "PERI DIALYSIS... • 0.025")
+export function stripFluidCode(label: string): string {
+  const parts = String(label || '')
+    .split('•')
+    .map((s) => s.trim())
+  if (parts.length >= 2 && /^[A-Za-z]{0,4}\d+[A-Za-z]*$/.test(parts[0])) {
+    parts.shift()
+  }
+  return parts.join(' • ')
+}
+
 export function getFluidOptionLabel(fluid?: Partial<Fluid>): string {
   return [fluid?.code, getFluidDisplayName(fluid), fluid?.conc].filter(Boolean).join(' • ')
 }

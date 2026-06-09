@@ -23,6 +23,7 @@ export default function PatientPicker({
   onChange,
   onSelect,
   disabled,
+  hideInactive = false,
   placeholder = 'พิมพ์ค้นหา HN หรือชื่อผู้ป่วย...',
 }: {
   patients: Patient[]
@@ -30,6 +31,7 @@ export default function PatientPicker({
   onChange: (text: string) => void
   onSelect: (patient: Patient) => void
   disabled?: boolean
+  hideInactive?: boolean
   placeholder?: string
 }) {
   const [open, setOpen] = useState(false)
@@ -37,11 +39,12 @@ export default function PatientPicker({
 
   const filtered = useMemo(() => {
     const q = (value || '').trim().toLowerCase()
-    const list = q
+    let list = q
       ? patients.filter((p) => String(p.hn).toLowerCase().includes(q) || (p.name || '').toLowerCase().includes(q))
       : patients
+    if (hideInactive) list = list.filter((p) => !isPatientInactive(p))
     return list.slice(0, 50)
-  }, [patients, value])
+  }, [patients, value, hideInactive])
 
   function choose(p: Patient) {
     window.clearTimeout(blurTimer.current)

@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react'
 import { useData } from '../../context/DataContext'
 import { deleteDispense } from '../../services/dispenses'
-import { getOrderFluidNames, splitOrderLines } from '../../lib/format'
+import { getOrderItems, stripFluidCode } from '../../lib/format'
 import { getPaginationData } from '../../lib/pagination'
 import { Swal, toastSuccess } from '../../lib/swal'
 import Pagination from '../../components/Pagination'
@@ -62,32 +62,44 @@ export default function DispensedTab() {
               <th className="px-4 py-3">สถานะ</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {pagination.totalItems === 0 ? (
               <tr><td colSpan={7} className="text-center py-8 text-slate-400">ยังไม่มีข้อมูล</td></tr>
             ) : (
-              pagination.items.map((o) => (
-                <tr key={o.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 text-slate-600">{o.dispenseDate || o.orderDate}</td>
-                  <td className="px-4 py-3 font-medium text-cyan-700">{o.hn}</td>
-                  <td className="px-4 py-3 text-slate-700">{o.name}</td>
-                  <td className="px-4 py-3 text-slate-600">{getOrderFluidNames(o).map((n, i) => <div key={i} className="mb-1 last:mb-0">{n}</div>)}</td>
-                  <td className="px-4 py-3 font-medium">{splitOrderLines(o.quantity).map((q, i) => <div key={i}>{q}</div>)}</td>
-                  <td className="px-4 py-3 text-slate-500">{o.dispenser || '-'}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-2">
-                      {o.status === 'dispensed' ? (
-                        <span className="status-dispensed px-2 py-0.5 rounded-md text-xs font-medium">✓ จ่ายแล้ว</span>
-                      ) : (
-                        <span className="status-cancelled px-2 py-0.5 rounded-md text-xs font-medium">✗ ยกเลิก</span>
-                      )}
-                      <button onClick={() => doDelete(o.id)} className="text-red-500 hover:text-red-700" title="ลบ">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" /></svg>
-                      </button>
-                    </span>
-                  </td>
-                </tr>
-              ))
+              pagination.items.map((o) => {
+                const items = getOrderItems(o).filter((it) => it.fluidType || it.quantity)
+                const list = items.length ? items : [{ fluidType: '-', quantity: '' }]
+                const span = list.length
+                return list.map((it, i) => (
+                  <tr key={`${o.id}-${i}`} className={`hover:bg-slate-50 ${i === 0 ? 'border-t border-slate-100' : ''}`}>
+                    {i === 0 && <td rowSpan={span} className="px-4 py-3 text-slate-600 align-top">{o.dispenseDate || o.orderDate}</td>}
+                    {i === 0 && <td rowSpan={span} className="px-4 py-3 font-medium text-cyan-700 align-top">{o.hn}</td>}
+                    {i === 0 && <td rowSpan={span} className="px-4 py-3 text-slate-700 align-top">{o.name}</td>}
+                    <td className="px-4 py-3 text-slate-600 leading-snug align-middle">
+                      <span className="text-blue-600 font-semibold mr-1">{i + 1}.</span>
+                      {stripFluidCode(it.fluidType) || '-'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap align-middle">
+                      {it.quantity ? <span className="font-semibold text-emerald-700">{it.quantity} ถุง</span> : <span className="text-slate-400">-</span>}
+                    </td>
+                    {i === 0 && <td rowSpan={span} className="px-4 py-3 text-slate-500 align-top">{o.dispenser || '-'}</td>}
+                    {i === 0 && (
+                      <td rowSpan={span} className="px-4 py-3 align-top">
+                        <span className="inline-flex items-center gap-2">
+                          {o.status === 'dispensed' ? (
+                            <span className="status-dispensed px-2 py-0.5 rounded-md text-xs font-medium">✓ จ่ายแล้ว</span>
+                          ) : (
+                            <span className="status-cancelled px-2 py-0.5 rounded-md text-xs font-medium">✗ ยกเลิก</span>
+                          )}
+                          <button onClick={() => doDelete(o.id)} className="text-red-500 hover:text-red-700" title="ลบ">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" /></svg>
+                          </button>
+                        </span>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              })
             )}
           </tbody>
         </table>

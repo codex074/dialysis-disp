@@ -1,16 +1,29 @@
-// แท็บรายการรอจ่าย — กดจ่าย/ยกเลิก (พอร์ตจาก #ptab-content-pending)
+// แท็บรายการรอจ่าย — ค้นหา/แบ่งหน้า + กดจ่าย/ยกเลิก (พอร์ตจาก #ptab-content-pending)
+import { useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import type { Dispense } from '../../types'
 import { cancelDispenseOrder, confirmDispense } from '../../services/dispenses'
 import { formatNextAppointmentLabel, getOrderFluidNames } from '../../lib/format'
+import { getPaginationData } from '../../lib/pagination'
 import { openDispenseDialog } from '../../lib/dispenseDialog'
 import { Swal, toastSuccess } from '../../lib/swal'
+import Pagination from '../../components/Pagination'
 
 export default function PendingTab() {
   const { user } = useAuth()
   const { orders, refresh } = useData()
-  const pendingOrders = orders.filter((o) => o.status === 'pending')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase()
+    return orders
+      .filter((o) => o.status === 'pending')
+      .filter((o) => !s || o.hn.toLowerCase().includes(s) || (o.name || '').toLowerCase().includes(s))
+  }, [orders, search])
+
+  const pagination = getPaginationData(filtered, page)
 
   async function dispense(order: Dispense) {
     const note = await openDispenseDialog(order)
@@ -52,19 +65,28 @@ export default function PendingTab() {
           <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           รายการรอจ่าย (ผู้ป่วยมารับแล้วกดจ่าย)
         </h3>
-        <button onClick={refresh} className="text-xs px-3 py-1.5 bg-white rounded-lg text-slate-700 border border-slate-200 hover:bg-slate-50 flex items-center gap-1">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-          รีเฟรช
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            placeholder="ค้นหา HN หรือชื่อ..."
+            className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white"
+          />
+          <button onClick={refresh} className="text-xs px-3 py-1.5 bg-white rounded-lg text-slate-700 border border-slate-200 hover:bg-slate-50 flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            รีเฟรช
+          </button>
+        </div>
       </div>
-      {pendingOrders.length === 0 ? (
+      {pagination.totalItems === 0 ? (
         <div className="text-center py-12 text-slate-400">
           <svg className="w-16 h-16 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
-          <p>ไม่มีรายการรอจ่าย</p>
+          <p>{search ? 'ไม่พบรายการที่ค้นหา' : 'ไม่มีรายการรอจ่าย'}</p>
         </div>
       ) : (
         <div className="divide-y divide-slate-100">
-          {pendingOrders.map((o) => (
+          {pagination.items.map((o) => (
             <div key={o.id} className="p-4 hover:bg-slate-50 flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="w-12 h-12 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -93,6 +115,11 @@ export default function PendingTab() {
               </div>
             </div>
           ))}
+          {pagination.totalPages > 1 && (
+            <div className="px-5 py-4 bg-amber-50/40">
+              <Pagination data={pagination} onChange={(d) => setPage((p) => p + d)} />
+            </div>
+          )}
         </div>
       )}
     </div>

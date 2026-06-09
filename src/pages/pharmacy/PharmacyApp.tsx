@@ -1,12 +1,10 @@
-// ห้องจ่ายยา (Pharmacy) — แท็บ Dashboard/รอจ่าย/จ่ายแล้ว/ประวัติ/น้ำยา/ผู้ใช้/นำเข้า
+// ห้องจ่ายยา (Pharmacy) — แท็บ Dashboard (รวมรอจ่าย/จ่ายแล้ว)/ประวัติ/น้ำยา/ผู้ใช้/นำเข้า
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import Loading from '../../components/Loading'
 import PatientHistoryView from '../../components/PatientHistoryView'
 import DashboardTab from './DashboardTab'
-import PendingTab from './PendingTab'
-import DispensedTab from './DispensedTab'
 import FluidsTab from './FluidsTab'
 import UsersTab from './UsersTab'
 import ImportTab from './ImportTab'
@@ -14,7 +12,7 @@ import { roleLabel } from '../../lib/dashboard'
 import { confirmDialog } from '../../lib/swal'
 import { openProfileDialog } from '../../lib/profileDialog'
 
-type Tab = 'dashboard' | 'pending' | 'dispensed' | 'history' | 'fluids' | 'users' | 'import'
+type Tab = 'dashboard' | 'history' | 'fluids' | 'users' | 'import'
 
 export default function PharmacyApp({ onHome }: { onHome: () => void }) {
   const { user, token, logout, setUser } = useAuth()
@@ -41,9 +39,7 @@ export default function PharmacyApp({ onHome }: { onHome: () => void }) {
   }
 
   const tabs: { key: Tab; label: string; adminOnly?: boolean; badge?: boolean }[] = [
-    { key: 'dashboard', label: 'Dashboard' },
-    { key: 'pending', label: 'รอจ่าย', badge: true },
-    { key: 'dispensed', label: 'จ่ายแล้ว' },
+    { key: 'dashboard', label: 'Dashboard', badge: true },
     { key: 'history', label: 'ประวัติผู้ป่วย' },
     { key: 'fluids', label: 'ชนิดน้ำยา' },
     { key: 'users', label: 'ผู้ใช้งาน', adminOnly: true },
@@ -54,12 +50,10 @@ export default function PharmacyApp({ onHome }: { onHome: () => void }) {
     <>
       <Loading show={loading} />
       <header className="bg-white shadow-sm border-b border-emerald-100 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-              </div>
+              <img src="/logo-pharmacy.svg" alt="ห้องจ่ายยา" className="w-10 h-10 rounded-xl shadow-lg" />
               <div>
                 <h1 className="text-lg font-bold text-slate-800">ห้องจ่ายยา</h1>
                 <p className="text-xs text-slate-500 mobile-hide">Pharmacy Module</p>
@@ -84,7 +78,7 @@ export default function PharmacyApp({ onHome }: { onHome: () => void }) {
         </div>
       </header>
 
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+      <nav className="w-full px-4 sm:px-6 lg:px-8 mt-6">
         <div className="flex flex-wrap gap-2 bg-white/50 backdrop-blur p-2 rounded-2xl shadow-sm border border-emerald-100">
           {tabs
             .filter((t) => !t.adminOnly || isAdmin)
@@ -101,11 +95,9 @@ export default function PharmacyApp({ onHome }: { onHome: () => void }) {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6">
         <div className="slide-in">
-          {tab === 'dashboard' && <DashboardTab onGotoPending={() => setTab('pending')} onGotoHistory={() => setTab('history')} />}
-          {tab === 'pending' && <PendingTab />}
-          {tab === 'dispensed' && <DispensedTab />}
+          {tab === 'dashboard' && <DashboardTab />}
           {tab === 'history' && <PatientHistoryView />}
           {tab === 'fluids' && <FluidsTab />}
           {tab === 'users' && isAdmin && <UsersTab />}
