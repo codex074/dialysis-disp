@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+    <radialGradient id="kidney" cx="0.38" cy="0.32" r="0.85">
+      <stop offset="0" stop-color="#ff9bb0"/>
+      <stop offset="0.5" stop-color="#f4587e"/>
+      <stop offset="1" stop-color="#c81d5e"/>
+    </radialGradient>
+    <linearGradient id="bag" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eafaff"/>
+      <stop offset="1" stop-color="#bfe9ff"/>
+    </linearGradient>
+    <linearGradient id="fluid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7dd3fc"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#083344" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <!-- full-bleed background for maskable safe zone -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <ellipse cx="200" cy="150" rx="220" ry="130" fill="#ffffff" opacity="0.12"/>
+
+  <!-- content scaled to ~78% and centered to stay within the maskable safe zone -->
+  <g transform="translate(56 56) scale(0.78)">
+    <!-- IV saline bag -->
+    <g filter="url(#soft)">
+      <path d="M150 78c0-14 28-14 28 0" fill="none" stroke="#e2f5ff" stroke-width="9" stroke-linecap="round"/>
+      <rect x="120" y="86" width="92" height="150" rx="26" fill="url(#bag)" stroke="#ffffff" stroke-width="4"/>
+      <path d="M124 150h84v60a22 22 0 0 1-22 22h-40a22 22 0 0 1-22-22z" fill="url(#fluid)"/>
+      <g stroke="#9fd8ef" stroke-width="3" stroke-linecap="round">
+        <line x1="128" y1="116" x2="140" y2="116"/>
+        <line x1="128" y1="134" x2="140" y2="134"/>
+      </g>
+      <rect x="132" y="98" width="16" height="120" rx="8" fill="#ffffff" opacity="0.55"/>
+      <rect x="152" y="232" width="28" height="16" rx="5" fill="#e2f5ff"/>
+    </g>
+
+    <path d="M166 250c0 60 70 40 118 60" fill="none" stroke="#e2f5ff" stroke-width="7" stroke-linecap="round" opacity="0.95"/>
+    <circle cx="284" cy="312" r="9" fill="#38bdf8"/>
+
+    <!-- Kidney character -->
+    <g filter="url(#soft)">
+      <path d="M330 198
+        C 384 190 424 224 438 280
+        C 452 338 430 402 378 428
+        C 332 451 280 444 256 408
+        C 240 384 256 360 268 344
+        C 280 328 258 314 262 286
+        C 266 250 296 232 330 198 Z" fill="url(#kidney)"/>
+      <path d="M332 224c26-8 50 4 58 26-22-12-46-12-70 2-10 6-12-20 12-28z" fill="#ffffff" opacity="0.45"/>
+    </g>
+
+    <g>
+      <ellipse cx="332" cy="300" rx="20" ry="23" fill="#ffffff"/>
+      <ellipse cx="386" cy="300" rx="20" ry="23" fill="#ffffff"/>
+      <circle cx="337" cy="305" r="10" fill="#3b1320"/>
+      <circle cx="390" cy="305" r="10" fill="#3b1320"/>
+      <circle cx="333" cy="300" r="3.5" fill="#ffffff"/>
+      <circle cx="386" cy="300" r="3.5" fill="#ffffff"/>
+      <ellipse cx="320" cy="340" rx="13" ry="8" fill="#ff7a99" opacity="0.55"/>
+      <ellipse cx="402" cy="340" rx="13" ry="8" fill="#ff7a99" opacity="0.55"/>
+      <path d="M344 340c10 12 30 12 40 0" fill="none" stroke="#3b1320" stroke-width="6" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>

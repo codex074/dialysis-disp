@@ -25,3 +25,6 @@ dist-ssr
 
 # local env
 .env
+
+# firebase deploy cache
+.firebase/
