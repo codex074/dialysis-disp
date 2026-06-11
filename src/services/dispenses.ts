@@ -222,7 +222,7 @@ export async function updateOrder(orderId: string, order: Partial<Dispense>): Pr
   }
 }
 
-export async function confirmDispense(id: string, user: User, note?: string): Promise<ServiceResult & { dispensedBy?: string }> {
+export async function confirmDispense(id: string, user: User, note?: string, items?: OrderItem[]): Promise<ServiceResult & { dispensedBy?: string }> {
   try {
     const ref = doc(db, COL.dispenses, id)
     const snap = await getDoc(ref)
@@ -234,6 +234,12 @@ export async function confirmDispense(id: string, user: User, note?: string): Pr
       status: STATUS_DISPENSED,
       dispensedDate: nowDateTime(),
       dispensedBy: user.name,
+    }
+    // ถ้ามีการแก้ไขรายการน้ำยา/จำนวนตอนยืนยันจ่าย ให้บันทึกรายการที่แก้แล้ว
+    if (items) {
+      const normalized = normalizeOrderItems(items)
+      if (normalized.status !== 'success') return normalized
+      update.items = normalized.items
     }
     if (String(note || '').trim()) update.note = appendRemark(current.note, 'เภสัช: ', note || '')
     await updateDoc(ref, update)

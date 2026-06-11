@@ -145,22 +145,20 @@ export default function PatientHistoryView() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50">
                     <tr className="text-left text-xs font-medium text-slate-600 uppercase">
-                      <th className="px-4 py-3">วันที่สั่ง</th>
+                      <th className="px-4 py-3">วันที่จ่าย</th>
                       <th className="px-4 py-3">น้ำยา</th>
                       <th className="px-4 py-3">จำนวน</th>
                       <th className="px-4 py-3">สถานะ</th>
-                      <th className="px-4 py-3">วันที่จ่าย</th>
                       <th className="px-4 py-3">ผู้จ่าย</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {pagination!.items.map((o) => (
                       <tr key={o.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3">{o.orderDateOnly}</td>
+                        <td className="px-4 py-3 text-slate-500">{o.dispenseDateOnly || '-'}</td>
                         <td className="px-4 py-3">{getOrderFluidNames(o).map((n, i) => <div key={i} className="mb-1 last:mb-0">{n}</div>)}</td>
                         <td className="px-4 py-3 font-medium">{splitOrderLines(o.quantity).map((q, i) => <div key={i}>{q}</div>)}</td>
                         <td className="px-4 py-3"><StatusBadge status={o.status} /></td>
-                        <td className="px-4 py-3 text-slate-500">{o.dispenseDateOnly || '-'}</td>
                         <td className="px-4 py-3 text-slate-500">{o.dispenser || '-'}</td>
                       </tr>
                     ))}

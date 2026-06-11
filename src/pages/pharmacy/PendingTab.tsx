@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import type { Dispense } from '../../types'
 import { cancelDispenseOrder, confirmDispense } from '../../services/dispenses'
-import { formatNextAppointmentLabel, getOrderFluidNames } from '../../lib/format'
+import { formatNextAppointmentLabel, getOrderItems, stripFluidCode } from '../../lib/format'
 import { getPaginationData } from '../../lib/pagination'
 import { openDispenseDialog } from '../../lib/dispenseDialog'
 import { Swal, toastSuccess } from '../../lib/swal'
@@ -12,7 +12,7 @@ import Pagination from '../../components/Pagination'
 
 export default function PendingTab() {
   const { user } = useAuth()
-  const { orders, refresh } = useData()
+  const { orders, fluids, refresh } = useData()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
 
@@ -21,14 +21,20 @@ export default function PendingTab() {
     return orders
       .filter((o) => o.status === 'pending')
       .filter((o) => !s || o.hn.toLowerCase().includes(s) || (o.name || '').toLowerCase().includes(s))
+      .sort((a, b) => {
+        if (!a.nextAppointment && !b.nextAppointment) return 0
+        if (!a.nextAppointment) return 1
+        if (!b.nextAppointment) return -1
+        return a.nextAppointment.localeCompare(b.nextAppointment)
+      })
   }, [orders, search])
 
   const pagination = getPaginationData(filtered, page)
 
   async function dispense(order: Dispense) {
-    const note = await openDispenseDialog(order)
-    if (note === null || !user) return
-    const res = await confirmDispense(order.id, user, note)
+    const result = await openDispenseDialog(order, fluids)
+    if (result === null || !user) return
+    const res = await confirmDispense(order.id, user, result.note, result.items)
     if (res.status === 'success') {
       Swal.fire({ icon: 'success', title: 'จ่ายยาเรียบร้อย', timer: 1800, showConfirmButton: false })
       await refresh()
@@ -95,13 +101,19 @@ export default function PendingTab() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className="status-pending px-2 py-0.5 rounded-md text-xs font-medium">รอจ่าย</span>
-                    <span className="text-xs text-slate-500">{o.orderDate}</span>
+                    <span className="text-xs text-amber-700">นัดถัดไป: {formatNextAppointmentLabel(o)}</span>
                   </div>
                   <p className="font-medium text-slate-800">{o.name} <span className="text-xs text-slate-400">(HN: {o.hn})</span></p>
-                  <div className="text-sm text-slate-600">{getOrderFluidNames(o).map((n, i) => <div key={i}>{n}</div>)}</div>
-                  <p className="text-xs text-amber-700 mt-1">นัดถัดไป: {formatNextAppointmentLabel(o)}</p>
-                  {o.nurse && <p className="text-xs text-slate-400">ห้องตรวจ: {o.nurse}</p>}
-                  {o.nurseNote && <p className="text-xs text-slate-500 italic">"{o.nurseNote}"</p>}
+                  <div className="text-sm text-slate-600 mt-0.5">
+                    {getOrderItems(o).filter((it) => it.fluidType || it.quantity).map((it, i) => (
+                      <div key={i}>
+                        <span className="text-blue-600 font-semibold mr-1">{i + 1}.</span>
+                        {stripFluidCode(it.fluidType) || '-'}
+                        {it.quantity && <span className="font-semibold text-emerald-700 ml-1">{it.quantity} ถุง</span>}
+                      </div>
+                    ))}
+                  </div>
+                  {o.nurseNote && <p className="text-xs text-slate-500 italic mt-1">"{o.nurseNote}"</p>}
                 </div>
               </div>
               <div className="flex gap-2">
